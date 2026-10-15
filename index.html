@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Vector Laboratory — Class 11 & 12 Physics Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #0b0d13;
+      --panel: #131722;
+      --card: #1a202f;
+      --border: #283044;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --vecA: #3b82f6;
+      --vecB: #10b981;
+      --vecC: #f59e0b;
+      --vecR: #ec4899;
+      --accent: #6366f1;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --card: #f1f5f9;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --vecA: #2563eb;
+      --vecB: #059669;
+      --vecC: #d97706;
+      --vecR: #db2777;
+      --accent: #4f46e5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand h1 { font-size: 1.15rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .brand p { font-size: 0.78rem; color: var(--muted); }
+    .badge { background: rgba(99,102,241,0.15); color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
+
+    .pedagogy-bar {
+      display: flex;
+      gap: 6px;
+      background: var(--card);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .ped-btn {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ped-btn.active { background: var(--accent); color: #fff; }
+
+    .op-nav {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    .op-tab {
+      background: var(--card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 7px 13px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.15s;
+    }
+    .op-tab:hover { color: var(--text); border-color: var(--accent); }
+    .op-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 350px 1fr 340px;
+      gap: 14px;
+      padding: 14px;
+      flex: 1;
+    }
+    @media (max-width: 1200px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    .panel-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .panel-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Vector Control Cards */
+    .vec-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--vecA);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .vec-card.vec-b { border-left-color: var(--vecB); }
+    .vec-card.vec-c { border-left-color: var(--vecC); }
+    .vec-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.88rem; }
+    .comp-eq { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px; }
+    [data-theme="light"] .comp-eq { background: rgba(0,0,0,0.06); }
+
+    .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; }
+    .ctrl-item { display: flex; flex-direction: column; gap: 3px; }
+    .ctrl-item label { color: var(--muted); font-size: 0.72rem; display: flex; justify-content: space-between; }
+    input[type="number"], select {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      width: 100%;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+    .btn-sm {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sm:hover { border-color: var(--accent); }
+    .btn-sm.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Center Viewport */
+    .canvas-container {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      height: 500px;
+      overflow: hidden;
+      display: flex;
+    }
+    canvas#canvas2D { width: 100%; height: 100%; display: block; cursor: grab; }
+    #viewport3D { width: 100%; height: 100%; display: none; position: relative; }
+    .canvas-hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      z-index: 5;
+    }
+    .canvas-legend {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(19, 23, 34, 0.88);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: #f1f5f9;
+      pointer-events: none;
+    }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+    /* Teaching Explanation Bottom Panel */
+    .teaching-panel {
+      margin: 0 14px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .teach-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .teach-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .teach-box h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.04em; }
+    .teach-box p { font-size: 0.83rem; line-height: 1.45; color: var(--text); }
+    .mono-math { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--vecB); }
+
+    .preset-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .graphs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    canvas.mini-graph { width: 100%; height: 130px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+    .comparison-grid {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 14px;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+    }
+    .comp-col {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>Interactive Vector Laboratory <span class="badge">Class 11 & 12 Physics</span></h1>
+      <p>Component-Driven 2D & 3D Vector Algebra, Trigonometry & Physical Applications</p>
+    </div>
+
+    <div class="pedagogy-bar">
+      <button class="ped-btn active" onclick="setPedagogy('explore', this)">1. Explore Mode</button>
+      <button class="ped-btn" onclick="setPedagogy('teach', this)">2. Teach Step-by-Step</button>
+      <button class="ped-btn" onclick="setPedagogy('practice', this)">3. Practice Quiz Mode</button>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn-sm" id="unitToggleBtn" onclick="toggleAngleUnit()">Angle: Degrees (°)</button>
+      <button class="btn-sm" onclick="toggleTheme()">☀️ / 🌙 Theme</button>
+    </div>
+  </header>
+
+  <nav class="op-nav">
+    <button class="op-tab active" onclick="setOpMode('workspace', this)">1. Vector Workspace (A, B, C)</button>
+    <button class="op-tab" onclick="setOpMode('add', this)">2. Addition (A + B)</button>
+    <button class="op-tab" onclick="setOpMode('sub', this)">3. Subtraction (A − B)</button>
+    <button class="op-tab" onclick="setOpMode('scalar', this)">4. Scalar Mult (kA)</button>
+    <button class="op-tab" onclick="setOpMode('dot', this)">5. Dot Product (A · B & Work)</button>
+    <button class="op-tab" onclick="setOpMode('cross', this)">6. Cross Product (A × B & Torque)</button>
+    <button class="op-tab" onclick="setOpMode('angleLab', this)">7. Angle Lab (0°–360° Graphs)</button>
+    <button class="op-tab" onclick="setOpMode('posVec', this)">8. Position & Displacement (PQ)</button>
+    <button class="op-tab" onclick="setOpMode('compare', this)">9. Multiplication Comparison</button>
+  </nav>
+
+  <div class="workspace">
+    <!-- LEFT COLUMN: VECTOR CONTROLS -->
+    <div class="col" id="leftControlsCol">
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>Live Vector Parameters</span>
+          <label style="font-size:0.72rem; cursor:pointer;">
+            <input type="checkbox" id="chkShowC" onchange="toggleVecC(this.checked)"> Enable Vector C
+          </label>
+        </div>
+
+        <!-- VECTOR A -->
+        <div class="vec-card" id="cardA">
+          <div class="vec-header">
+            <span style="color:var(--vecA)">Vector A⃗</span>
+            <button class="btn-sm" onclick="reverseVec('A')">Reverse (−A⃗)</button>
+          </div>
+          <div class="comp-eq" id="eqA">A⃗ = 4.00 î + 3.00 ĵ</div>
+          <div class="ctrl-grid">
+            <div class="ctrl-item">
+              <label><span>Magnitude |A|</span><span id="lblMagA">5.00</span></label>
+              <input type="range" min="0" max="12" step="0.1" id="slMagA" oninput="updateFromMagAngle('A', this.value, null)">
+              <input type="number" step="0.1" min="0" max="20" id="numMagA" onchange="updateFromMagAngle('A', this.value, null)">
+            </div>
+            <div class="ctrl-item">
+              <label><span>Direction θ_A</span><span id="lblAngA">36.9°</span></label>
+              <input type="range" min="-180" max="180" step="1" id="slAngA" oninput="updateFromMagAngle('A', null, this.value)">
+              <input type="number" step="1" id="numAngA" onchange="updateFromMagAngleInput('A', this.value)">
+            </div>
+            <div class="ctrl-item">
+              <label>Component Aₓ (A cos θ)</label>
+              <input type="number" step="0.1" id="numAx" onchange="updateFromComps('A')">
+            </div>
+            <div class="ctrl-item">
+              <label>Component Aᵧ (A sin θ)</label>
+              <input type="number" step="0.1" id="numAy" onchange="updateFromComps('A')">
+            </div>
+          </div>
+        </div>
+
+        <!-- VECTOR B -->
+        <div class="vec-card vec-b" id="cardB">
+          <div class="vec-header">
+            <span style="color:var(--vecB)">Vector B⃗</span>
+            <button class="btn-sm" onclick="reverseVec('B')">Reverse (−B⃗)</button>
+          </div>
+          <div class="comp-eq" id="eqB">B⃗ = 2.00 î + 4.00 ĵ</div>
+          <div class="ctrl-grid">
+            <div class="ctrl-item">
+              <label><span>Magnitude |B|</span><span id="lblMagB">4.47</span></label>
+              <input type="range" min="0" max="12" step="0.1" id="slMagB" oninput="updateFromMagAngle('B', this.value, null)">
+              <input type="number" step="0.1" min="0" max="20" id="numMagB" onchange="updateFromMagAngle('B', this.value, null)">
+            </div>
+            <div class="ctrl-item">
+              <label><span>Direction θ_B</span><span id="lblAngB">63.4°</span></label>
+              <input type="range" min="-180" max="180" step="1" id="slAngB" oninput="updateFromMagAngle('B', null, this.value)">
+              <input type="number" step="1" id="numAngB" onchange="updateFromMagAngleInput('B', this.value)">
+            </div>
+            <div class="ctrl-item">
+              <label>Component Bₓ (B cos θ)</label>
+              <input type="number" step="0.1" id="numBx" onchange="updateFromComps('B')">
+            </div>
+            <div class="ctrl-item">
+              <label>Component Bᵧ (B sin θ)</label>
+              <input type="number" step="0.1" id="numBy" onchange="updateFromComps('B')">
+            </div>
+          </div>
+        </div>
+
+        <!-- VECTOR C (Optional) -->
+        <div class="vec-card vec-c" id="cardC" style="display:none;">
+          <div class="vec-header">
+            <span style="color:var(--vecC)">Vector C⃗</span>
+            <button class="btn-sm" onclick="reverseVec('C')">Reverse (−C⃗)</button>
+          </div>
+          <div class="comp-eq" id="eqC">C⃗ = -3.00 î + 2.00 ĵ</div>
+          <div class="ctrl-grid">
+            <div class="ctrl-item">
+              <label>Component Cₓ</label>
+              <input type="number" step="0.1" id="numCx" onchange="updateFromComps('C')">
+            </div>
+            <div class="ctrl-item">
+              <label>Component Cᵧ</label>
+              <input type="number" step="0.1" id="numCy" onchange="updateFromComps('C')">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER COLUMN: 2D / 3D INTERACTIVE VIEWPORT -->
+    <div class="col">
+      <div class="canvas-container">
+        <div class="canvas-hud">
+          <button class="btn-sm" onclick="zoomCanvas(1.15)">Zoom In (+)</button>
+          <button class="btn-sm" onclick="zoomCanvas(0.85)">Zoom Out (−)</button>
+          <button class="btn-sm" onclick="resetView()">Reset View</button>
+          <label class="btn-sm" style="display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chkComps" checked onchange="renderAll()"> Show Components
+          </label>
+          <label class="btn-sm" style="display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chkAngles" checked onchange="renderAll()"> Show Angles
+          </label>
+          <label class="btn-sm" style="display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chkGrid" checked onchange="renderAll()"> Grid
+          </label>
+        </div>
+
+        <canvas id="canvas2D"></canvas>
+        <div id="viewport3D"></div>
+
+        <!-- MULTIPLICATION COMPARISON SCREEN -->
+        <div class="comparison-grid" id="comparisonView">
+          <div class="comp-col">
+            <h3 style="color:var(--vecC); font-size:0.95rem;">1. Scalar Multiplication (kA⃗)</h3>
+            <p style="font-size:0.8rem; color:var(--muted);">Multiplies a vector by a real number (scalar). Changes magnitude; reverses direction if k &lt; 0.</p>
+            <div class="comp-eq" id="compScalarOut">Result: Vector in same/opposite line</div>
+            <p style="font-size:0.8rem;"><strong>Type of Result:</strong> <span class="badge">2D/3D Vector</span></p>
+            <p style="font-size:0.78rem; color:var(--muted);">Physical Example: p⃗ = m v⃗ (Momentum) or F⃗ = m a⃗</p>
+          </div>
+          <div class="comp-col">
+            <h3 style="color:var(--vecA); font-size:0.95rem;">2. Dot Product (A⃗ · B⃗)</h3>
+            <p style="font-size:0.8rem; color:var(--muted);">Measures how much A⃗ and B⃗ point along each other: |A||B| cos θ.</p>
+            <div class="comp-eq" id="compDotOut">Result: Scalar Number</div>
+            <p style="font-size:0.8rem;"><strong>Type of Result:</strong> <span class="badge">Scalar Quantity</span></p>
+            <p style="font-size:0.78rem; color:var(--muted);">Physical Example: Work W = F⃗ · s⃗, Electric Flux Φ = E⃗ · A⃗</p>
+          </div>
+          <div class="comp-col">
+            <h3 style="color:var(--vecR); font-size:0.95rem;">3. Cross Product (A⃗ × B⃗)</h3>
+            <p style="font-size:0.8rem; color:var(--muted);">Measures perpendicularity & rotational effect: |A||B| sin θ n̂.</p>
+            <div class="comp-eq" id="compCrossOut">Result: 3D Orthogonal Vector</div>
+            <p style="font-size:0.8rem;"><strong>Type of Result:</strong> <span class="badge">Vector ⊥ to Plane</span></p>
+            <p style="font-size:0.78rem; color:var(--muted);">Physical Example: Torque τ⃗ = r⃗ × F⃗, Magnetic Force F⃗ = q(v⃗ × B⃗)</p>
+          </div>
+        </div>
+
+        <div class="canvas-legend">
+          <span><i class="leg-dot" style="background:var(--vecA)"></i>Vector A⃗</span>
+          <span><i class="leg-dot" style="background:var(--vecB)"></i>Vector B⃗</span>
+          <span><i class="leg-dot" style="background:var(--vecR)"></i>Resultant / Output</span>
+          <span style="color:var(--muted)">💡 Drag any vector arrowhead directly on canvas</span>
+        </div>
+      </div>
+
+      <!-- ANGLE LAB LIVE GRAPHS (Shown in Angle Lab Mode) -->
+      <div class="panel-card" id="angleGraphsCard" style="display:none;">
+        <div class="panel-title">Live Angle Functions: Dot Product (cos θ) vs Cross Product Magnitude (|sin θ|)</div>
+        <div class="graphs-row">
+          <canvas id="graphDot" class="mini-graph"></canvas>
+          <canvas id="graphCross" class="mini-graph"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: MODE-SPECIFIC CONTROLS & TELEMETRY -->
+    <div class="col">
+      <!-- Dynamic Mode Controls -->
+      <div class="panel-card" id="modeSpecificCard">
+        <div class="panel-title" id="modePanelTitle">Operation Controls</div>
+        <div id="modeControlsContent" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+      <!-- Live Telemetry Readout -->
+      <div class="panel-card">
+        <div class="panel-title">Mathematical Telemetry</div>
+        <div id="telemetryBox" style="display:flex; flex-direction:column; gap:8px; font-size:0.82rem;"></div>
+      </div>
+
+      <!-- Practice Mode Box -->
+      <div class="panel-card" id="practiceCard" style="display:none; border-color:var(--accent);">
+        <div class="panel-title" style="color:var(--accent);">Practice Challenge</div>
+        <p id="practicePrompt" style="font-size:0.82rem;">Predict the resultant magnitude |R| for the current vectors A and B:</p>
+        <div style="display:flex; gap:6px;">
+          <input type="number" step="0.1" id="practiceInput" placeholder="Enter value...">
+          <button class="btn-sm active" onclick="checkPracticeAnswer()">Submit</button>
+        </div>
+        <div id="practiceFeedback" style="font-size:0.78rem; font-weight:600;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM TEACHING EXPLANATION PANEL -->
+  <section class="teaching-panel" id="teachingPanel">
+    <div class="panel-title">
+      <span>Live Classroom Concept Breakdown (Synchronised with Workspace)</span>
+      <span id="teachStepIndicator" style="color:var(--accent);">Real-Time Interactive Mode</span>
+    </div>
+    <div class="teach-grid">
+      <div class="teach-box">
+        <h4>1. What are we changing?</h4>
+        <p id="expChanging"></p>
+      </div>
+      <div class="teach-box">
+        <h4>2. What do we observe?</h4>
+        <p id="expObserve"></p>
+      </div>
+      <div class="teach-box">
+        <h4>3. Mathematical Calculation</h4>
+        <p id="expMath" class="mono-math"></p>
+      </div>
+      <div class="teach-box">
+        <h4>4. Physical Meaning</h4>
+        <p id="expMeaning"></p>
+      </div>
+      <div class="teach-box">
+        <h4>5. Board Key Takeaway</h4>
+        <p id="expTakeaway" style="font-weight:600;"></p>
+      </div>
+    </div>
+  </section>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // --- GLOBAL STATE ---
+    const state = {
+      opMode: 'workspace',     // workspace, add, sub, scalar, dot, cross, angleLab, posVec, compare
+      pedagogy: 'explore',     // explore, teach, practice
+      teachStep: 3,            // 1, 2, 3
+      angleUnit: 'deg',        // 'deg' or 'rad'
+      scale: 32,               // pixels per unit
+      panX: 0,
+      panY: 0,
+      showC: false,
+      addMethod: 'triangle',   // triangle, parallelogram, component
+      animT: 1.0,              // 0..1 animation progress
+      scalarK: 1.5,
+      projRole: 'AonB',        // 'AonB' or 'BonA'
+      physicsContext: false,   // Work in dot mode, Torque in cross mode
+      cross3D: false,          // 2D vs 3D view in cross product
+      swapCross: false,        // A x B vs B x A
+      A: { x: 4, y: 3, z: 0, ox: 0, oy: 0 },
+      B: { x: 2, y: 4, z: 0, ox: 0, oy: 0 },
+      C: { x: -3, y: 2, z: 0, ox: 0, oy: 0 },
+      P: { x: -3, y: -1 },
+      Q: { x: 3, y: 3 }
+    };
+
+    const canvas = document.getElementById('canvas2D');
+    const ctx = canvas.getContext('2d');
+    let animFrameId = null;
+
+    // --- HELPER MATH ---
+    const toRad = d => d * Math.PI / 180;
+    const toDeg = r => r * 180 / Math.PI;
+    const mag = v => Math.hypot(v.x, v.y);
+    const angleRad = v => (v.x === 0 && v.y === 0) ? 0 : Math.atan2(v.y, v.x);
+    const formatAngle = rad => {
+      if (state.angleUnit === 'deg') return `${toDeg(rad).toFixed(1)}°`;
+      return `${rad.toFixed(2)} rad`;
+    };
+    const betweenAngleRad = (a, b) => {
+      const ma = mag(a), mb = mag(b);
+      if (ma < 1e-6 || mb < 1e-6) return 0;
+      const c = Math.max(-1, Math.min(1, (a.x * b.x + a.y * b.y) / (ma * mb)));
+      return Math.acos(c);
+    };
+
+    // --- SYNCHRONISE LEFT PANEL INPUTS ---
+    function syncVectorInputs() {
+      ['A', 'B', 'C'].forEach(k => {
+        const v = state[k];
+        const m = mag(v);
+        const r = angleRad(v);
+        const d = toDeg(r);
+        const eqEl = document.getElementById(`eq${k}`);
+        if (eqEl) eqEl.textContent = `${k}⃗ = ${v.x.toFixed(2)} î ${v.y >= 0 ? '+' : '−'} ${Math.abs(v.y).toFixed(2)} ĵ`;
+
+        if (k !== 'C') {
+          document.getElementById(`lblMag${k}`).textContent = m.toFixed(2);
+          document.getElementById(`lblAng${k}`).textContent = (m < 1e-5) ? 'Undefined (0⃗)' : formatAngle(r);
+          document.getElementById(`slMag${k}`).value = m;
+          document.getElementById(`numMag${k}`).value = m.toFixed(2);
+          document.getElementById(`slAng${k}`).value = d;
+          document.getElementById(`numAng${k}`).value = state.angleUnit === 'deg' ? d.toFixed(1) : r.toFixed(2);
+        }
+        document.getElementById(`num${k}x`).value = v.x.toFixed(2);
+        document.getElementById(`num${k}y`).value = v.y.toFixed(2);
+      });
+    }
+
+    // --- EXPOSED WINDOW HANDLERS ---
+    window.updateFromMagAngle = (k, newMag, newDeg) => {
+      const v = state[k];
+      const curMag = newMag !== null ? Math.max(0, parseFloat(newMag) || 0) : mag(v);
+      const curDeg = newDeg !== null ? parseFloat(newDeg) || 0 : toDeg(angleRad(v));
+      const rad = toRad(curDeg);
+      v.x = curMag * Math.cos(rad);
+      v.y = curMag * Math.sin(rad);
+      renderAll();
+    };
+
+    window.updateFromMagAngleInput = (k, val) => {
+      const num = parseFloat(val) || 0;
+      const deg = state.angleUnit === 'deg' ? num : toDeg(num);
+      window.updateFromMagAngle(k, null, deg);
+    };
+
+    window.updateFromComps = k => {
+      const nx = parseFloat(document.getElementById(`num${k}x`).value) || 0;
+      const ny = parseFloat(document.getElementById(`num${k}y`).value) || 0;
+      state[k].x = nx;
+      state[k].y = ny;
+      renderAll();
+    };
+
+    window.reverseVec = k => {
+      state[k].x = -state[k].x;
+      state[k].y = -state[k].y;
+      renderAll();
+    };
+
+    window.toggleVecC = show => {
+      state.showC = show;
+      document.getElementById('cardC').style.display = show ? 'flex' : 'none';
+      renderAll();
+    };
+
+    window.toggleAngleUnit = () => {
+      state.angleUnit = state.angleUnit === 'deg' ? 'rad' : 'deg';
+      document.getElementById('unitToggleBtn').textContent = `Angle: ${state.angleUnit === 'deg' ? 'Degrees (°)' : 'Radians (rad)'}`;
+      renderAll();
+    };
+
+    window.toggleTheme = () => {
+      const root = document.documentElement;
+      root.setAttribute('data-theme', root.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+      renderAll();
+    };
+
+    window.zoomCanvas = factor => {
+      state.scale = Math.max(14, Math.min(80, state.scale * factor));
+      renderAll();
+    };
+
+    window.resetView = () => {
+      state.scale = 32;
+      state.panX = 0;
+      state.panY = 0;
+      state.A = { x: 4, y: 3, z: 0, ox: 0, oy: 0 };
+      state.B = { x: 2, y: 4, z: 0, ox: 0, oy: 0 };
+      renderAll();
+    };
+
+    window.setPedagogy = (mode, btn) => {
+      state.pedagogy = mode;
+      document.querySelectorAll('.ped-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('practiceCard').style.display = mode === 'practice' ? 'flex' : 'none';
+      if (mode === 'teach') {
+        state.teachStep = 1;
+        document.getElementById('teachStepIndicator').innerHTML = `
+          <button class="btn-sm" onclick="stepTeach(-1)">◀ Prev Step</button>
+          <span style="margin:0 6px;">Step <b id="stepNum">1</b> / 3</span>
+          <button class="btn-sm active" onclick="stepTeach(1)">Next Step ▶</button>
+        `;
+      } else {
+        state.teachStep = 3;
+        document.getElementById('teachStepIndicator').textContent = mode === 'practice' ? 'Practice Assessment Mode' : 'Real-Time Interactive Mode';
+      }
+      renderAll();
+    };
+
+    window.stepTeach = dir => {
+      state.teachStep = Math.max(1, Math.min(3, state.teachStep + dir));
+      const el = document.getElementById('stepNum');
+      if (el) el.textContent = state.teachStep;
+      renderAll();
+    };
+
+    window.checkPracticeAnswer = () => {
+      const userVal = parseFloat(document.getElementById('practiceInput').value);
+      const fb = document.getElementById('practiceFeedback');
+      let target = mag({ x: state.A.x + state.B.x, y: state.A.y + state.B.y });
+      if (state.opMode === 'dot') target = state.A.x * state.B.x + state.A.y * state.B.y;
+      if (state.opMode === 'cross') target = Math.abs(state.A.x * state.B.y - state.A.y * state.B.x);
+
+      if (isNaN(userVal)) {
+        fb.style.color = 'var(--danger)';
+        fb.textContent = 'Please enter a valid number.';
+        return;
+      }
+      if (Math.abs(userVal - target) <= 0.25) {
+        fb.style.color = 'var(--success)';
+        fb.textContent = `✅ Correct! Exact value is ${target.toFixed(2)}.`;
+      } else {
+        fb.style.color = 'var(--danger)';
+        fb.textContent = `❌ Not quite. Exact value is ${target.toFixed(2)}. Check the component formula in the teaching panel below!`;
+      }
+    };
+
+    // --- BUILD MODE-SPECIFIC RIGHT PANEL CONTROLS ---
+    window.setOpMode = (mode, btn) => {
+      state.opMode = mode;
+      document.querySelectorAll('.op-tab').forEach(t => t.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      document.getElementById('angleGraphsCard').style.display = mode === 'angleLab' ? 'flex' : 'none';
+      document.getElementById('comparisonView').style.display = mode === 'compare' ? 'grid' : 'none';
+
+      if (mode === 'cross' && state.cross3D) {
+        canvas.style.display = 'none';
+        document.getElementById('viewport3D').style.display = 'block';
+      } else {
+        canvas.style.display = mode === 'compare' ? 'none' : 'block';
+        document.getElementById('viewport3D').style.display = 'none';
+      }
+
+      buildModeControls();
+      renderAll();
+    };
+
+    function buildModeControls() {
+      const box = document.getElementById('modeControlsContent');
+      const title = document.getElementById('modePanelTitle');
+      const m = state.opMode;
+
+      if (m === 'workspace') {
+        title.textContent = '1. Vector Workspace Presets';
+        box.innerHTML = `
+          <p style="font-size:0.78rem; color:var(--muted);">Drag vector tips on the canvas or adjust starting coordinates (ox, oy) below:</p>
+          <div class="ctrl-grid">
+            <div class="ctrl-item"><label>Origin A_ox</label><input type="number" step="0.5" value="${state.A.ox}" onchange="state.A.ox=+this.value;renderAll()"></div>
+            <div class="ctrl-item"><label>Origin A_oy</label><input type="number" step="0.5" value="${state.A.oy}" onchange="state.A.oy=+this.value;renderAll()"></div>
+          </div>
+          <button class="btn-sm" onclick="state.A.ox=0;state.A.oy=0;state.B.ox=0;state.B.oy=0;buildModeControls();renderAll()">Snap All Origins to O(0,0)</button>
+        `;
+      } else if (m === 'add') {
+        title.textContent = '2. Vector Addition (R⃗ = A⃗ + B⃗)';
+        box.innerHTML = `
+          <div class="preset-chips">
+            <button class="btn-sm ${state.addMethod==='triangle'?'active':''}" onclick="state.addMethod='triangle';buildModeControls();renderAll()">Triangle (Head-to-Tail)</button>
+            <button class="btn-sm ${state.addMethod==='parallelogram'?'active':''}" onclick="state.addMethod='parallelogram';buildModeControls();renderAll()">Parallelogram</button>
+            <button class="btn-sm ${state.addMethod==='component'?'active':''}" onclick="state.addMethod='component';buildModeControls();renderAll()">Component Method</button>
+          </div>
+          <button class="btn-sm active" onclick="playTranslationAnim()">▶ Animate Step-by-Step Translation</button>
+          <div style="font-size:0.74rem; color:var(--muted); margin-top:4px;">Standard Classroom Cases:</div>
+          <div class="preset-chips">
+            <button class="btn-sm" onclick="setPairPreset(0)">Same Dir (0°)</button>
+            <button class="btn-sm" onclick="setPairPreset(90)">Perpendicular (90°)</button>
+            <button class="btn-sm" onclick="setPairPreset(180)">Opposite (180°)</button>
+            <button class="btn-sm" onclick="setEqualOpposite()">Zero Resultant (A = −B)</button>
+          </div>
+        `;
+      } else if (m === 'sub') {
+        title.textContent = '3. Vector Subtraction (R⃗ = A⃗ − B⃗)';
+        box.innerHTML = `
+          <p style="font-size:0.78rem; color:var(--muted);">Visualises <b>A⃗ − B⃗ = A⃗ + (−B⃗)</b> by reversing B⃗ and applying head-to-tail construction.</p>
+          <button class="btn-sm active" onclick="playTranslationAnim()">▶ Animate A⃗ + (−B⃗)</button>
+        `;
+      } else if (m === 'scalar') {
+        title.textContent = '4. Scalar Multiplication (kA⃗)';
+        box.innerHTML = `
+          <div class="ctrl-item">
+            <label><span>Scalar Multiplier (k)</span><span id="lblK">${state.scalarK.toFixed(2)}</span></label>
+            <input type="range" min="-3" max="3" step="0.1" value="${state.scalarK}" oninput="state.scalarK=+this.value;document.getElementById('lblK').textContent=state.scalarK.toFixed(2);renderAll()">
+          </div>
+          <div class="preset-chips">
+            <button class="btn-sm" onclick="state.scalarK=2;buildModeControls();renderAll()">k = 2 (Enlarge)</button>
+            <button class="btn-sm" onclick="state.scalarK=0.5;buildModeControls();renderAll()">k = 0.5 (Shrink)</button>
+            <button class="btn-sm" onclick="state.scalarK=0;buildModeControls();renderAll()">k = 0 (Zero Vector)</button>
+            <button class="btn-sm" onclick="state.scalarK=-1.5;buildModeControls();renderAll()">k = −1.5 (Reverse)</button>
+          </div>
+        `;
+      } else if (m === 'dot') {
+        title.textContent = '5. Dot Product (A⃗ · B⃗)';
+        box.innerHTML = `
+          <div class="preset-chips">
+            <button class="btn-sm ${state.projRole==='AonB'?'active':''}" onclick="state.projRole='AonB';buildModeControls();renderAll()">Project A onto B</button>
+            <button class="btn-sm ${state.projRole==='BonA'?'active':''}" onclick="state.projRole='BonA';buildModeControls();renderAll()">Project B onto A</button>
+            <button class="btn-sm ${state.physicsContext?'active':''}" onclick="state.physicsContext=!state.physicsContext;buildModeControls();renderAll()">Work Mode (W = F⃗ · s⃗)</button>
+          </div>
+          <div style="font-size:0.74rem; color:var(--muted);">Special Angle Presets:</div>
+          <div class="preset-chips">
+            <button class="btn-sm" onclick="setPairPreset(0)">0° (Max +)</button>
+            <button class="btn-sm" onclick="setPairPreset(60)">60° (+)</button>
+            <button class="btn-sm" onclick="setPairPreset(90)">90° (Zero Work)</button>
+            <button class="btn-sm" onclick="setPairPreset(120)">120° (−)</button>
+            <button class="btn-sm" onclick="setPairPreset(180)">180° (Min −)</button>
+          </div>
+        `;
+      } else if (m === 'cross') {
+        title.textContent = '6. Cross Product (A⃗ × B⃗)';
+        box.innerHTML = `
+          <div class="preset-chips">
+            <button class="btn-sm ${!state.cross3D?'active':''}" onclick="state.cross3D=false;setOpMode('cross')">2D Area & ⊙/⊗ View</button>
+            <button class="btn-sm ${state.cross3D?'active':''}" onclick="state.cross3D=true;setOpMode('cross')">3D Right-Hand Rule View</button>
+          </div>
+          <div class="preset-chips">
+            <button class="btn-sm ${state.swapCross?'active':''}" onclick="state.swapCross=!state.swapCross;buildModeControls();renderAll()">Swap Order: ${state.swapCross?'B⃗ × A⃗ = −(A⃗ × B⃗)':'A⃗ × B⃗'}</button>
+            <button class="btn-sm ${state.physicsContext?'active':''}" onclick="state.physicsContext=!state.physicsContext;buildModeControls();renderAll()">Torque (τ⃗ = r⃗ × F⃗)</button>
+          </div>
+          <div class="preset-chips">
+            <button class="btn-sm" onclick="setPairPreset(0)">0° (Zero)</button>
+            <button class="btn-sm" onclick="setPairPreset(30)">30°</button>
+            <button class="btn-sm" onclick="setPairPreset(90)">90° (Max Area)</button>
+            <button class="btn-sm" onclick="setPairPreset(150)">150°</button>
+            <button class="btn-sm" onclick="setPairPreset(180)">180° (Zero)</button>
+          </div>
+        `;
+      } else if (m === 'angleLab') {
+        const curDiff = ((toDeg(angleRad(state.B) - angleRad(state.A)) % 360) + 360) % 360;
+        title.textContent = '7. Angle Laboratory (0°–360°)';
+        box.innerHTML = `
+          <div class="ctrl-item">
+            <label><span>Angle Δθ from A⃗ to B⃗</span><span id="lblLabAngle">${curDiff.toFixed(1)}°</span></label>
+            <input type="range" min="0" max="360" step="1" value="${curDiff}" oninput="setPairPreset(+this.value);document.getElementById('lblLabAngle').textContent=(+this.value).toFixed(1)+'°'">
+          </div>
+          <div class="preset-chips">
+            ${[0,30,45,60,90,120,135,150,180].map(a => `<button class="btn-sm" onclick="setPairPreset(${a});buildModeControls()">${a}°</button>`).join('')}
+          </div>
+        `;
+      } else if (m === 'posVec') {
+        title.textContent = '8. Position & Displacement Vectors';
+        box.innerHTML = `
+          <div class="ctrl-grid">
+            <div class="ctrl-item"><label>Point P (xP)</label><input type="number" step="0.5" value="${state.P.x}" onchange="state.P.x=+this.value;renderAll()"></div>
+            <div class="ctrl-item"><label>Point P (yP)</label><input type="number" step="0.5" value="${state.P.y}" onchange="state.P.y=+this.value;renderAll()"></div>
+            <div class="ctrl-item"><label>Point Q (xQ)</label><input type="number" step="0.5" value="${state.Q.x}" onchange="state.Q.x=+this.value;renderAll()"></div>
+            <div class="ctrl-item"><label>Point Q (yQ)</label><input type="number" step="0.5" value="${state.Q.y}" onchange="state.Q.y=+this.value;renderAll()"></div>
+          </div>
+        `;
+      } else if (m === 'compare') {
+        title.textContent = '9. Side-by-Side Comparison';
+        box.innerHTML = `<p style="font-size:0.8rem; color:var(--muted);">Adjust A⃗ and B⃗ on the left panel to compare how Scalar Multiplication, Dot Product, and Cross Product behave simultaneously.</p>`;
+      }
+    }
+
+    window.setPairPreset = degDiff => {
+      const mB = Math.max(2, mag(state.B));
+      const angA = angleRad(state.A);
+      const newAngB = angA + toRad(degDiff);
+      state.B.x = mB * Math.cos(newAngB);
+      state.B.y = mB * Math.sin(newAngB);
+      renderAll();
+    };
+
+    window.setEqualOpposite = () => {
+      state.B.x = -state.A.x;
+      state.B.y = -state.A.y;
+      renderAll();
+    };
+
+    window.playTranslationAnim = () => {
+      state.animT = 0;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      const step = () => {
+        state.animT = Math.min(1, state.animT + 0.015);
+        renderAll();
+        if (state.animT < 1) animFrameId = requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    // --- 2D CANVAS DRAWING ---
+    function worldToScreen(wx, wy, w, h) {
+      return {
+        x: w / 2 + state.panX + wx * state.scale,
+        y: h / 2 + state.panY - wy * state.scale
+      };
+    }
+    function screenToWorld(sx, sy, w, h) {
+      return {
+        x: (sx - w / 2 - state.panX) / state.scale,
+        y: (h / 2 + state.panY - sy) / state.scale
+      };
+    }
+
+    function drawArrow2D(wx1, wy1, wx2, wy2, color, label = '', width = 3, dashed = false) {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      const p1 = worldToScreen(wx1, wy1, w, h);
+      const p2 = worldToScreen(wx2, wy2, w, h);
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy);
+      if (len < 2) return;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      if (dashed) ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      const ang = Math.atan2(dy, dx);
+      const head = 11;
+      ctx.beginPath();
+      ctx.moveTo(p2.x, p2.y);
+      ctx.lineTo(p2.x - head * Math.cos(ang - Math.PI / 6), p2.y - head * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(p2.x - head * Math.cos(ang + Math.PI / 6), p2.y - head * Math.sin(ang + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      if (label) {
+        ctx.font = "600 12px 'Inter', sans-serif";
+        ctx.fillText(label, p2.x + 8, p2.y - 8);
+      }
+      ctx.restore();
+    }
+
+    function draw2DScene() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      const gridCol = isLight ? '#e2e8f0' : '#1e2536';
+      const axisCol = isLight ? '#64748b' : '#475569';
+      const textCol = isLight ? '#0f172a' : '#f1f5f9';
+
+      const origin = worldToScreen(0, 0, w, h);
+
+      // 1. Grid
+      if (document.getElementById('chkGrid').checked) {
+        ctx.strokeStyle = gridCol;
+        ctx.lineWidth = 1;
+        const step = state.scale;
+        for (let x = origin.x % step; x < w; x += step) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = origin.y % step; y < h; y += step) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+      }
+
+      // 2. Axes
+      ctx.strokeStyle = axisCol;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, origin.y); ctx.lineTo(w, origin.y);
+      ctx.moveTo(origin.x, 0); ctx.lineTo(origin.x, h);
+      ctx.stroke();
+
+      ctx.fillStyle = axisCol;
+      ctx.font = "600 12px 'JetBrains Mono', monospace";
+      ctx.fillText("O(0,0)", origin.x + 6, origin.y + 16);
+      ctx.fillText("+X", w - 28, origin.y - 8);
+      ctx.fillText("+Y", origin.x + 8, 18);
+
+      const showComps = document.getElementById('chkComps').checked;
+      const showAngles = document.getElementById('chkAngles').checked;
+      const A = state.A, B = state.B, C = state.C;
+
+      if (state.opMode === 'posVec') {
+        // Position vectors OP, OQ and Displacement PQ
+        drawArrow2D(0, 0, state.P.x, state.P.y, '#3b82f6', `r_P (${state.P.x},${state.P.y})`, 2.5, true);
+        drawArrow2D(0, 0, state.Q.x, state.Q.y, '#10b981', `r_Q (${state.Q.x},${state.Q.y})`, 2.5, true);
+        const dx = state.Q.x - state.P.x, dy = state.Q.y - state.P.y;
+        drawArrow2D(state.P.x, state.P.y, state.Q.x, state.Q.y, '#ec4899', `PQ⃗ = (${dx.toFixed(1)}, ${dy.toFixed(1)})`, 3.5);
+        return;
+      }
+
+      // Helper for component projections
+      const drawCompProjections = (v, col) => {
+        if (!showComps) return;
+        drawArrow2D(v.ox, v.oy, v.ox + v.x, v.oy, col, '', 1.5, true);
+        drawArrow2D(v.ox + v.x, v.oy, v.ox + v.x, v.oy + v.y, col, '', 1.5, true);
+      };
+
+      // Step 1: Always draw base vector(s)
+      drawCompProjections(A, '#3b82f6');
+      const labelA = state.physicsContext && state.opMode === 'dot' ? `F⃗ (${mag(A).toFixed(1)} N)`
+                   : state.physicsContext && state.opMode === 'cross' ? `r⃗ (${mag(A).toFixed(1)} m)`
+                   : `A⃗ (${mag(A).toFixed(1)})`;
+      drawArrow2D(A.ox, A.oy, A.ox + A.x, A.oy + A.y, '#3b82f6', labelA, 3.2);
+
+      if (state.opMode !== 'scalar') {
+        drawCompProjections(B, '#10b981');
+        const labelB = state.physicsContext && state.opMode === 'dot' ? `s⃗ (${mag(B).toFixed(1)} m)`
+                     : state.physicsContext && state.opMode === 'cross' ? `F⃗ (${mag(B).toFixed(1)} N)`
+                     : `B⃗ (${mag(B).toFixed(1)})`;
+        drawArrow2D(B.ox, B.oy, B.ox + B.x, B.oy + B.y, '#10b981', labelB, 3.2);
+      }
+
+      if (state.showC && state.opMode === 'workspace') {
+        drawCompProjections(C, '#f59e0b');
+        drawArrow2D(C.ox, C.oy, C.ox + C.x, C.oy + C.y, '#f59e0b', `C⃗ (${mag(C).toFixed(1)})`, 3);
+      }
+
+      // Angle Arc
+      if (showAngles && state.opMode !== 'scalar') {
+        const rA = angleRad(A), rB = angleRad(B);
+        ctx.save();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, 34, -rA, -rB, rB > rA);
+        ctx.stroke();
+        ctx.fillStyle = textCol;
+        ctx.font = "600 11px 'JetBrains Mono', monospace";
+        const between = betweenAngleRad(A, B);
+        ctx.fillText(`θ=${formatAngle(between)}`, origin.x + 38, origin.y - 10);
+        ctx.restore();
+      }
+
+      if (state.teachStep < 2) return; // In Teach mode step 1, show only input vectors
+
+      // Step 2 & 3: Mode-specific constructions
+      if (state.opMode === 'add') {
+        const rx = A.x + B.x, ry = A.y + B.y;
+        if (state.addMethod === 'triangle') {
+          const tx = A.x * state.animT, ty = A.y * state.animT;
+          drawArrow2D(tx, ty, tx + B.x, ty + B.y, '#10b981', `Translated B⃗`, 2.5, true);
+        } else if (state.addMethod === 'parallelogram') {
+          drawArrow2D(A.x, A.y, rx, ry, '#94a3b8', '', 1.5, true);
+          drawArrow2D(B.x, B.y, rx, ry, '#94a3b8', '', 1.5, true);
+        } else if (state.addMethod === 'component') {
+          drawArrow2D(0, 0, rx, 0, '#ec4899', `Rₓ=${rx.toFixed(1)}`, 2, true);
+          drawArrow2D(rx, 0, rx, ry, '#ec4899', `Rᵧ=${ry.toFixed(1)}`, 2, true);
+        }
+        if (state.teachStep >= 3 && state.pedagogy !== 'practice') {
+          drawArrow2D(0, 0, rx, ry, '#ec4899', `R⃗ = A⃗+B⃗ (${ Math.hypot(rx,ry).toFixed(2) })`, 3.8);
+        }
+      } else if (state.opMode === 'sub') {
+        const rx = A.x - B.x, ry = A.y - B.y;
+        drawArrow2D(0, 0, -B.x, -B.y, '#f59e0b', `−B⃗`, 2.2, true);
+        const tx = A.x * state.animT, ty = A.y * state.animT;
+        drawArrow2D(tx, ty, tx - B.x, ty - B.y, '#f59e0b', `Translated −B⃗`, 2.2, true);
+        if (state.teachStep >= 3 && state.pedagogy !== 'practice') {
+          drawArrow2D(0, 0, rx, ry, '#ec4899', `R⃗ = A⃗−B⃗ (${ Math.hypot(rx,ry).toFixed(2) })`, 3.8);
+        }
+      } else if (state.opMode === 'scalar') {
+        const kx = state.scalarK * A.x, ky = state.scalarK * A.y;
+        drawArrow2D(0, 0, kx, ky, '#ec4899', `kA⃗ (${Math.hypot(kx,ky).toFixed(2)})`, 3.8);
+      } else if (state.opMode === 'dot') {
+        // Projection visualization
+        const src = state.projRole === 'AonB' ? A : B;
+        const dst = state.projRole === 'AonB' ? B : A;
+        const mDst = mag(dst);
+        if (mDst > 1e-5) {
+          const ux = dst.x / mDst, uy = dst.y / mDst;
+          const projScalar = src.x * ux + src.y * uy;
+          const px = projScalar * ux, py = projScalar * uy;
+          drawArrow2D(src.x, src.y, px, py, '#94a3b8', '', 1.5, true);
+          drawArrow2D(0, 0, px, py, '#ec4899', `Proj = ${projScalar.toFixed(2)}`, 4);
+        }
+      } else if (state.opMode === 'cross') {
+        // Shade parallelogram area |A x B|
+        const p0 = worldToScreen(0, 0, w, h);
+        const pA = worldToScreen(A.x, A.y, w, h);
+        const pAB = worldToScreen(A.x + B.x, A.y + B.y, w, h);
+        const pB = worldToScreen(B.x, B.y, w, h);
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(236, 72, 153, 0.22)';
+        ctx.strokeStyle = '#ec4899';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(pA.x, pA.y);
+        ctx.lineTo(pAB.x, pAB.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        const rawCz = A.x * B.y - A.y * B.x;
+        const cz = state.swapCross ? -rawCz : rawCz;
+        const sym = Math.abs(cz) < 1e-4 ? '0 (Collinear)' : (cz > 0 ? '⊙ Out of Screen (+k̂)' : '⊗ Into Screen (−k̂)');
+        ctx.fillStyle = textCol;
+        ctx.font = "700 13px 'JetBrains Mono', monospace";
+        ctx.fillText(`Area = |A×B| = ${Math.abs(cz).toFixed(2)} | Dir: ${sym}`, p0.x + 16, p0.y - 16);
+        ctx.restore();
+      }
+    }
+
+    // --- 3D THREE.JS CROSS PRODUCT VIEWPORT ---
+    let scene3D, camera3D, renderer3D, arrowA3D, arrowB3D, arrowC3D;
+    function init3D() {
+      const container = document.getElementById('viewport3D');
+      scene3D = new THREE.Scene();
+      scene3D.background = new THREE.Color(0x131722);
+      camera3D = new THREE.PerspectiveCamera(45, 1.5, 0.1, 100);
+      camera3D.position.set(10, 10, 12);
+      camera3D.up.set(0, 0, 1); // Z axis up for right-hand rule clarity
+
+      renderer3D = new THREE.WebGLRenderer({ antialias: true });
+      container.appendChild(renderer3D.domElement);
+
+      const controls = new OrbitControls(camera3D, renderer3D.domElement);
+      controls.enableDamping = true;
+
+      const grid = new THREE.GridHelper(16, 16, 0x3b82f6, 0x283044);
+      grid.rotation.x = Math.PI / 2;
+      scene3D.add(grid);
+
+      const axes = new THREE.AxesHelper(8);
+      scene3D.add(axes);
+
+      arrowA3D = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 4, 0x3b82f6, 0.5, 0.3);
+      arrowB3D = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 4, 0x10b981, 0.5, 0.3);
+      arrowC3D = new THREE.ArrowHelper(new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,0), 4, 0xec4899, 0.6, 0.35);
+      scene3D.add(arrowA3D, arrowB3D, arrowC3D);
+
+      function anim3D() {
+        requestAnimationFrame(anim3D);
+        if (state.opMode === 'cross' && state.cross3D) {
+          const w = container.clientWidth, h = container.clientHeight;
+          if (w && h && (renderer3D.domElement.width !== w || renderer3D.domElement.height !== h)) {
+            renderer3D.setSize(w, h);
+            camera3D.aspect = w / h;
+            camera3D.updateProjectionMatrix();
+          }
+          controls.update();
+          renderer3D.render(scene3D, camera3D);
+        }
+      }
+      anim3D();
+    }
+
+    function update3DVectors() {
+      if (!arrowA3D) return;
+      const vA = new THREE.Vector3(state.A.x, state.A.y, 0);
+      const vB = new THREE.Vector3(state.B.x, state.B.y, 0);
+      const vC = new THREE.Vector3().crossVectors(state.swapCross ? vB : vA, state.swapCross ? vA : vB);
+
+      if (vA.length() > 0.01) arrowA3D.setDirection(vA.clone().normalize());
+      arrowA3D.setLength(Math.max(0.1, vA.length()), 0.4, 0.25);
+
+      if (vB.length() > 0.01) arrowB3D.setDirection(vB.clone().normalize());
+      arrowB3D.setLength(Math.max(0.1, vB.length()), 0.4, 0.25);
+
+      if (vC.length() > 0.01) arrowC3D.setDirection(vC.clone().normalize());
+      arrowC3D.setLength(Math.max(0.1, vC.length() * 0.45), 0.5, 0.3);
+    }
+
+    // --- MINI GRAPHS FOR ANGLE LAB ---
+    function drawAngleLabGraphs() {
+      if (state.opMode !== 'angleLab') return;
+      const mA = mag(state.A), mB = mag(state.B);
+      const maxProd = Math.max(1, mA * mB);
+      const curDiffDeg = ((toDeg(angleRad(state.B) - angleRad(state.A)) % 360) + 360) % 360;
+
+      const plotCurve = (canvasId, fn, title, color) => {
+        const c = document.getElementById(canvasId);
+        const g = c.getContext('2d');
+        const w = c.clientWidth, h = c.clientHeight;
+        c.width = w; c.height = h;
+        g.clearRect(0, 0, w, h);
+
+        // Zero axis
+        g.strokeStyle = '#475569';
+        g.beginPath(); g.moveTo(30, h/2); g.lineTo(w-10, h/2); g.stroke();
+
+        // Function curve
+        g.strokeStyle = color;
+        g.lineWidth = 2;
+        g.beginPath();
+        for (let deg = 0; deg <= 360; deg += 2) {
+          const x = 30 + (deg / 360) * (w - 45);
+          const val = fn(toRad(deg));
+          const y = h / 2 - (val / maxProd) * (h * 0.38);
+          deg === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+        }
+        g.stroke();
+
+        // Current angle marker
+        const cx = 30 + (curDiffDeg / 360) * (w - 45);
+        const cy = h / 2 - (fn(toRad(curDiffDeg)) / maxProd) * (h * 0.38);
+        g.fillStyle = '#ffffff';
+        g.beginPath(); g.arc(cx, cy, 5, 0, Math.PI * 2); g.fill();
+
+        g.fillStyle = '#94a3b8';
+        g.font = "600 11px 'Inter', sans-serif";
+        g.fillText(`${title}: ${fn(toRad(curDiffDeg)).toFixed(2)} (at θ=${curDiffDeg.toFixed(0)}°)`, 10, 16);
+      };
+
+      plotCurve('graphDot', r => mA * mB * Math.cos(r), 'Dot Product |A||B|cosθ', '#3b82f6');
+      plotCurve('graphCross', r => mA * mB * Math.abs(Math.sin(r)), 'Cross Mag |A||B||sinθ|', '#ec4899');
+    }
+
+    // --- TELEMETRY & WRITTEN EXPLANATION UPDATER ---
+    function updateTelemetryAndExplanations() {
+      const A = state.A, B = state.B;
+      const mA = mag(A), mB = mag(B);
+      const thetaRad = betweenAngleRad(A, B);
+      const thetaDeg = toDeg(thetaRad);
+      const dot = A.x * B.x + A.y * B.y;
+      const crossZ = (state.swapCross ? -1 : 1) * (A.x * B.y - A.y * B.x);
+      const rx = A.x + B.x, ry = A.y + B.y;
+      const subx = A.x - B.x, suby = A.y - B.y;
+
+      const tBox = document.getElementById('telemetryBox');
+      tBox.innerHTML = `
+        <div><b>Angle between A⃗ & B⃗:</b> <span class="mono-math">${formatAngle(thetaRad)}</span></div>
+        <div><b>Sum |A⃗ + B⃗|:</b> <span class="mono-math">${Math.hypot(rx, ry).toFixed(2)} units</span></div>
+        <div><b>Difference |A⃗ − B⃗|:</b> <span class="mono-math">${Math.hypot(subx, suby).toFixed(2)} units</span></div>
+        <div><b>Dot Product (A⃗ · B⃗):</b> <span class="mono-math">${dot.toFixed(2)} ${state.physicsContext && state.opMode==='dot' ? 'Joules (J)' : ''}</span></div>
+        <div><b>Signed Cross z (AₓBᵧ − AᵧBₓ):</b> <span class="mono-math">${crossZ.toFixed(2)}</span></div>
+        <div><b>Cross Magnitude |A⃗ × B⃗|:</b> <span class="mono-math">${Math.abs(crossZ).toFixed(2)} ${state.physicsContext && state.opMode==='cross' ? 'N·m' : 'sq. units'}</span></div>
+      `;
+
+      // Update Comparison View if active
+      if (state.opMode === 'compare') {
+        const kx = state.scalarK * A.x, ky = state.scalarK * A.y;
+        document.getElementById('compScalarOut').textContent = `${state.scalarK}A⃗ = ${kx.toFixed(2)}î + ${ky.toFixed(2)}ĵ (|kA|=${Math.hypot(kx,ky).toFixed(2)})`;
+        document.getElementById('compDotOut').textContent = `A⃗ · B⃗ = ${dot.toFixed(2)} (Scalar Number)`;
+        document.getElementById('compCrossOut').textContent = `A⃗ × B⃗ = ${crossZ.toFixed(2)} k̂ (|A×B|=${Math.abs(crossZ).toFixed(2)})`;
+      }
+
+      // 5-Section Pedagogical Explanation
+      const c1 = document.getElementById('expChanging');
+      const c2 = document.getElementById('expObserve');
+      const c3 = document.getElementById('expMath');
+      const c4 = document.getElementById('expMeaning');
+      const c5 = document.getElementById('expTakeaway');
+
+      c1.textContent = `|A| = ${mA.toFixed(2)} (${A.x.toFixed(1)}î + ${A.y.toFixed(1)}ĵ), |B| = ${mB.toFixed(2)} (${B.x.toFixed(1)}î + ${B.y.toFixed(1)}ĵ), Angle θ = ${thetaDeg.toFixed(1)}°.`;
+
+      if (state.opMode === 'add' || state.opMode === 'workspace') {
+        c2.textContent = `Placing the tail of B⃗ at the head of A⃗ forms a triangle whose closing side from O is the resultant R⃗.`;
+        c3.textContent = `Rₓ = ${A.x.toFixed(1)} + (${B.x.toFixed(1)}) = ${rx.toFixed(2)}, Rᵧ = ${A.y.toFixed(1)} + (${B.y.toFixed(1)}) = ${ry.toFixed(2)} ⇒ |R| = ${Math.hypot(rx,ry).toFixed(2)}`;
+        c4.textContent = `Two forces or displacements acting simultaneously produce the same net effect as the single vector R⃗.`;
+        c5.textContent = `Vector addition is commutative (A⃗ + B⃗ = B⃗ + A⃗) and depends on both magnitudes and the angle θ between them.`;
+      } else if (state.opMode === 'sub') {
+        c2.textContent = `Vector B⃗ is flipped 180° to form −B⃗, and then added head-to-tail to A⃗.`;
+        c3.textContent = `Rₓ = ${A.x.toFixed(1)} − (${B.x.toFixed(1)}) = ${subx.toFixed(2)}, Rᵧ = ${A.y.toFixed(1)} − (${B.y.toFixed(1)}) = ${suby.toFixed(2)} ⇒ |A−B| = ${Math.hypot(subx,suby).toFixed(2)}`;
+        c4.textContent = `Represents relative velocity (v_AB = v_A − v_B) or change in velocity Δv⃗ = v_f − v_i.`;
+        c5.textContent = `Subtracting a vector is geometrically identical to adding its negative: A⃗ − B⃗ = A⃗ + (−B⃗).`;
+      } else if (state.opMode === 'scalar') {
+        c2.textContent = `Scaling A⃗ by k = ${state.scalarK.toFixed(2)} stretches/shrinks its length by |k| and ${state.scalarK < 0 ? 'reverses its arrow direction' : 'keeps its direction'}.`;
+        c3.textContent = `kA⃗ = (${state.scalarK} × ${A.x.toFixed(1)})î + (${state.scalarK} × ${A.y.toFixed(1)})ĵ = ${(state.scalarK*A.x).toFixed(2)}î + ${(state.scalarK*A.y).toFixed(2)}ĵ`;
+        c4.textContent = `Multiplying velocity v⃗ by mass m gives momentum p⃗ = mv⃗ along the exact same line.`;
+        c5.textContent = `A negative scalar reverses a vector's direction by 180°; k = 0 collapses it into the zero vector 0⃗.`;
+      } else if (state.opMode === 'dot') {
+        const signStr = Math.abs(dot) < 1e-3 ? 'Zero (Perpendicular)' : (dot > 0 ? 'Positive (Acute angle)' : 'Negative (Obtuse angle)');
+        c2.textContent = `Dropping a perpendicular shadow of one vector onto the other shows their aligned component (${signStr}).`;
+        c3.textContent = `A⃗·B⃗ = |A||B|cos(${thetaDeg.toFixed(1)}°) = (${A.x.toFixed(1)})(${B.x.toFixed(1)}) + (${A.y.toFixed(1)})(${B.y.toFixed(1)}) = ${dot.toFixed(2)}`;
+        c4.textContent = state.physicsContext ? `Work W = F⃗·s⃗ = ${dot.toFixed(2)} J. At 90°, a force perpendicular to displacement does ZERO work!` : `Measures how strongly two vectors reinforce each other along the same line.`;
+        c5.textContent = `The dot product uses cos θ because it multiplies the component of one vector parallel to the other.`;
+      } else if (state.opMode === 'cross' || state.opMode === 'angleLab') {
+        c2.textContent = `Vectors A⃗ and B⃗ span a parallelogram of area ${Math.abs(crossZ).toFixed(2)}. Direction follows the Right-Hand Rule (${crossZ >= 0 ? '+k̂ Outward' : '−k̂ Inward'}).`;
+        c3.textContent = `A⃗×B⃗ = (AₓBᵧ − AᵧBₓ)k̂ = (${A.x.toFixed(1)}×${B.y.toFixed(1)} − ${A.y.toFixed(1)}×${B.x.toFixed(1)})k̂ = ${crossZ.toFixed(2)} k̂`;
+        c4.textContent = state.physicsContext ? `Torque τ⃗ = r⃗×F⃗ = ${Math.abs(crossZ).toFixed(2)} N·m. Only the force component perpendicular to the lever arm causes rotation!` : `Determines rotational torque and magnetic Lorentz force perpendicular to the plane.`;
+        c5.textContent = `Cross product uses sin θ because only the perpendicular component generates area or turning effect. Also, B⃗ × A⃗ = −(A⃗ × B⃗).`;
+      } else if (state.opMode === 'posVec') {
+        const dx = state.Q.x - state.P.x, dy = state.Q.y - state.P.y;
+        c2.textContent = `Position vectors start at Origin O, while displacement vector PQ⃗ connects P(${state.P.x},${state.P.y}) to Q(${state.Q.x},${state.Q.y}).`;
+        c3.textContent = `PQ⃗ = r_Q − r_P = (${state.Q.x} − ${state.P.x})î + (${state.Q.y} − ${state.P.y})ĵ = ${dx.toFixed(1)}î + ${dy.toFixed(1)}ĵ`;
+        c4.textContent = `Translating a free vector parallel to itself preserves its components (Δx, Δy), magnitude, and direction.`;
+        c5.textContent = `A displacement vector depends only on the initial and final coordinates, independent of the origin choice.`;
+      }
+    }
+
+    // --- INTERACTIVE CANVAS DRAGGING ---
+    let draggingKey = null;
+    let isPanning = false;
+    let lastMouse = { x: 0, y: 0 };
+
+    canvas.addEventListener('pointerdown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+
+      if (state.opMode === 'posVec') {
+        const sP = worldToScreen(state.P.x, state.P.y, w, h);
+        const sQ = worldToScreen(state.Q.x, state.Q.y, w, h);
+        if (Math.hypot(sx - sQ.x, sy - sQ.y) < 16) { draggingKey = 'Q'; return; }
+        if (Math.hypot(sx - sP.x, sy - sP.y) < 16) { draggingKey = 'P'; return; }
+      } else {
+        const candidates = ['A', 'B'];
+        if (state.showC) candidates.push('C');
+        for (const k of candidates) {
+          const v = state[k];
+          const tip = worldToScreen(v.ox + v.x, v.oy + v.y, w, h);
+          if (Math.hypot(sx - tip.x, sy - tip.y) < 18) {
+            draggingKey = k;
+            canvas.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
+      }
+      isPanning = true;
+      lastMouse = { x: sx, y: sy };
+    });
+
+    canvas.addEventListener('pointermove', e => {
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+
+      if (draggingKey) {
+        const world = screenToWorld(sx, sy, w, h);
+        if (draggingKey === 'P' || draggingKey === 'Q') {
+          state[draggingKey].x = Math.round(world.x * 2) / 2;
+          state[draggingKey].y = Math.round(world.y * 2) / 2;
+          buildModeControls();
+        } else {
+          const v = state[draggingKey];
+          v.x = Math.round((world.x - v.ox) * 10) / 10;
+          v.y = Math.round((world.y - v.oy) * 10) / 10;
+        }
+        renderAll();
+      } else if (isPanning) {
+        state.panX += sx - lastMouse.x;
+        state.panY += sy - lastMouse.y;
+        lastMouse = { x: sx, y: sy };
+        renderAll();
+      }
+    });
+
+    window.addEventListener('pointerup', () => { draggingKey = null; isPanning = false; });
+    window.addEventListener('resize', () => renderAll());
+
+    window.renderAll = function() {
+      syncVectorInputs();
+      draw2DScene();
+      update3DVectors();
+      drawAngleLabGraphs();
+      updateTelemetryAndExplanations();
+    };
+
+    // Initialise Lab
+    init3D();
+    buildModeControls();
+    renderAll();
+  </script>
+</body>
+</html>
